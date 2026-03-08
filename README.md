@@ -9,12 +9,12 @@ The data cleaning pipeline is located in `/code/01_dataCleaning/`. Before runnin
 
 1. **Download the lynx trajectory dataset**  
    - File: `Complete_20231231`  
-   - Source: [USFWS IRIS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165521)  
+   - Source: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165521)  
    - Place it in: `/data/Complete_20231231/`
 
 2. **Download the CTN refuge reference data**  
    - File: `ctn_refuge.csv`  
-   - Source: [USFWS IRIS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165519)  
+   - Source: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165519)  
    - Place it in: `/data/Complete_20231231/ctn_refuge/`
 
 3. **Update the configuration file**  
@@ -32,7 +32,7 @@ The data cleaning pipeline can be run using the `clean_data.sh` script. Navigate
 This command runs the entire pipeline in one go. Each step can also be executed individually if needed. The data cleaning pipeline for the lynx trajectory dataset consists of four main steps:
 
 1. **01_lynxCleaning.R**  
-   This script was sourced from the original authors who collected the lynx trajectory data. It handles the initial import, formatting, and standardization of the raw data to prepare it for analysis. The workflow closely follows the original `data_import.r` script from the USFWS IRIS database.
+   This script was sourced from the original authors who collected the lynx trajectory data. It handles the initial import, formatting, and standardization of the raw data to prepare it for analysis. The workflow closely follows the original `data_import.r` script from the USFWS database.
 
 2. **02_alignTimes.py**  
    Aligns timestamps across all lynx trajectories to ensure we have consistent 4-hour timesteps. This step corrects for differences in recording intervals and prepares the dataset for downstream analyses such as MSD calculations.
