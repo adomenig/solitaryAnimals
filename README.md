@@ -16,7 +16,7 @@ Before running any of the scripts, we need to set up the environment first. To d
 
 **Required Packages**: You will need an environment with the following packages installed to run the scripts:
 
-- **Python packages**
+- Python packages
   - sys
   - matplotlib
   - numpy
@@ -28,12 +28,15 @@ Before running any of the scripts, we need to set up the environment first. To d
   - mpl_toolkits.basemap
   - haversine
 
-- **R packages**
+- R packages
   - tidyverse
   - lubridate
 
-
-
+**References**  
+- Original data source: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165521)  
+- CTN_Refuge data: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165519)  
+- Original data cleaning pipeline: [`data_import.r`](https://iris.fws.gov/APPS/ServCat/Reference/Profile/168327)  
+- Reference paper: [PNAS, 2024](https://www.pnas.org/doi/10.1073/pnas.2414052121)
 
 
 ## Data Cleaning
@@ -63,9 +66,4 @@ This command runs the entire pipeline in one go. Each step can also be executed 
    - Mean squared displacement (MSD) analyses
    - Instantaneous velocity distributions for selected individuals
   
-**References**  
-- Original data source: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165521)  
-- CTN_Refuge data: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165519)  
-- Original data cleaning pipeline: [`data_import.r`](https://iris.fws.gov/APPS/ServCat/Reference/Profile/168327)  
-- Reference paper: [PNAS, 2024](https://www.pnas.org/doi/10.1073/pnas.2414052121)
 
