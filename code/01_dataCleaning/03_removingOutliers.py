@@ -35,7 +35,8 @@ def remove_high_speed_points(traj):
         if time_diff_hours <= 0:
             keep_mask[i] = False
             continue
-
+        
+        # using haversine to get the distances in kilometers
         dist_km = haversine(tuple(coords[i - 1]), tuple(coords[i]), unit=Unit.KILOMETERS)
         speed_kmph = dist_km / time_diff_hours
 

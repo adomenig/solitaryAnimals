@@ -14,7 +14,9 @@ if len(sys.argv) < 2:
     print("Usage: python process_lynx.py /path/to/home_directory")
     sys.exit(1)
 
-home_dir = sys.argv[1]
+home_dir = Path(sys.argv[1])
+sys.path.insert(0, str(home_dir))
+import helper_functions # type:ignore
 
 colorscheme = ["#8fd7d7", "#00b0be", "#ff8ca1", "#f45f74", "#bdd373", "#98c127", "#ffcd8e", "#ffb255", "#c084d4"] 
 
@@ -138,20 +140,6 @@ def calculate_for_lynx(args):
         print(f"Error with {lynx_id}: {e}")
         return lynx_id, np.array([]), np.array([])
 
-
-def haversine_vectorized(lat1, lon1, lat2, lon2):
-    """
-    Helper function for calculating vectorized haversine distances between 
-    two points in given Latitude and Longitude Coordinates.
-    """
-    R = 6371.0  # earth radius in km
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-
-    a = np.sin(dlat / 2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2.0)**2
-    c = 2 * np.arcsin(np.sqrt(a))
-    return R * c
-
 def calculate_msd(traj, max_lag_steps=None):
     latlon = np.radians(traj[['Lat', 'Long']].values.astype(np.float64))
     times = traj['Time'].values.astype('datetime64[s]').astype(np.float64) / 3600  # convert to hours
@@ -174,7 +162,7 @@ def calculate_msd(traj, max_lag_steps=None):
 
         # calculate the distances for all pairs at once -> we need to convert it to haversine 
         # distances since we're working with latitude and longitudes
-        dists = haversine_vectorized(lat1[valid_mask], lon1[valid_mask], lat2[valid_mask], lon2[valid_mask])
+        dists = helper_functions.haversine_vectorized(lat1[valid_mask], lon1[valid_mask], lat2[valid_mask], lon2[valid_mask])
         squared_displacements = dists**2
         lags_hours.append(np.mean(dt[valid_mask]))
         msds.append(np.mean(squared_displacements))
@@ -216,8 +204,7 @@ def plot_all_lynx_msds(df, out_path, max_workers=10):
 
     fig.tight_layout()
     plt.savefig(out_path / "MSDs.png", dpi=300)
-    print(f"Plotted MSDS for {n_plotted} Lynx\n.")
-
+    print(f"Plotted MSDS for {n_plotted} Lynx\n")
 ############## MSD PLOTTING END ###################################
 
 
@@ -276,7 +263,6 @@ def plot_selected_lynx_trajectories(df, selected_lynx, out_path, buffer_frac=0.0
     out_file = Path(out_path) / "selected_lynx_trajectories_subplots.png"
     plt.savefig(out_file, dpi=300)
     plt.close()
-
     print(f"Plotted selected lynx trajectories for lynx: {', '.join(selected_lynx)} \n")
 ############## SELETED LYNX TRAJECTORY PLOTTING END ###################################
 
@@ -305,7 +291,7 @@ def compute_velocity(df):
             if dt == 0:
                 vel = 0
             else:
-                dist = haversine_vectorized(lats[i-1], lons[i-1], lats[i], lons[i])
+                dist = helper_functions.haversine_vectorized(lats[i-1], lons[i-1], lats[i], lons[i])
                 vel = dist / (dt / 3600.0)  # km/h
             velocities.append(vel)
 
