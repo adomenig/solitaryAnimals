@@ -46,7 +46,7 @@ The data cleaning pipeline is located in `/code/01_dataCleaning/`. Before runnin
 - `/data/processed/dataCleaning/` — cleaned CSV files  
 - `/outputs/data_diagnostics/` — plots and diagnostic figures
 
-To run the pipeline, use the `clean_data.sh` script. Navigate to `/code/01_dataCleaning/` and run the following command: `./cleanData.sh --config /path/to/config.py`
+To run the pipeline, use the `cleanData.sh` script. Navigate to `/code/01_dataCleaning/` and run the following command: `./cleanData.sh --config /path/to/config.py`
 
 This command runs the entire pipeline in one go. Each step can also be executed individually if needed. The data cleaning pipeline for the lynx trajectory dataset consists of four main steps:
 
