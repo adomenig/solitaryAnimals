@@ -33,6 +33,8 @@
 #       https://www.pnas.org/doi/10.1073/pnas.2414052121
 ###############################################################################
 
+set -e
+
 # parse command line arguments
 while [[ $# -gt 0 ]]; do
   key="$1"
