@@ -9,33 +9,33 @@ if len(sys.argv) < 2:
 
 home_dir = sys.argv[1]
 
-data_path = f"{home_dir}/data/processed/lynx_initial_clean.df"
+data_path = f"{home_dir}/data/processed/lynx_initial_clean.csv"
 output_path = f"{home_dir}/data/processed/filtered_lynx_processed.csv"
 gps_data = pd.read_csv(data_path)
 
 # parse the time
 gps_data['Time'] = pd.to_datetime(gps_data['Time'], errors='coerce', utc=False)
-gps_data = gps_data.dropna(subset=['Time'])  # Drop bad timestamps
+gps_data = gps_data.dropna(subset=['Time'])  # drop bad timestamps
 
 # constants
 four_hours = pd.Timedelta(hours=4)
-five_min = pd.Timedelta(minutes=5) # we set a 5-minute buffer for the 4-hour timesteps
+five_min = pd.Timedelta(minutes=5) # we set a 5 minute buffer for timestamps so we still count 3:55 as 4:00
 
 def round_to_nearest_4hr(timestamp):
-    """Rounding the timestamp to the nearest 4-hour mark (00:00, 04:00, 08:00, etc.)"""
-    # get the day
+    """Round timestamp to nearest 4-hour mark (00:00, 04:00, 08:00, etc.)"""
+    # get the the day 
     day = timestamp.floor('D')
-    # calculate hours since midnight
+    # calculate the hours since midnight
     hours_since_midnight = (timestamp - day).total_seconds() / 3600
     # round to the nearest 4-hour interval
     rounded_hours = round(hours_since_midnight / 4) * 4
-    # create a new timestamp
+    # create the new timestamp
     return day + pd.Timedelta(hours=rounded_hours)
 
 def process_lynx(lynx_id):
     """
-    Here is where we align the timesteps to 4-hour intervals. We set a 5-minute
-    buffer.
+    This applies the new timesteps to our lynx. We make sure that the rounded time is within 
+    +- 5 minutes of the original time. If it is, we apply the new rounded timestamp. 
     """
     lynx_data = gps_data[gps_data['ID'] == lynx_id].sort_values('Time').copy()
     if lynx_data.empty:
@@ -49,7 +49,7 @@ def process_lynx(lynx_id):
         
         # check if the original time is within +-5 minutes of the rounded time
         if abs(original_time - rounded_time) <= five_min:
-            # keep this point, but use the exact 4-hour mark as timestamp
+            # Keep this point, but use the exact 4-hour mark as timestamp
             new_row = row.copy()
             new_row['Time'] = rounded_time
             selected_rows.append(new_row)
@@ -57,24 +57,24 @@ def process_lynx(lynx_id):
     return selected_rows
 
 def verify_4_hour_intervals(df):
-    """This is just a final check that all timestamps are at exact 4-hour intervals"""
+    """This is just a verification that all timestamps are at exact 4-hour intervals"""
     df['Time'] = pd.to_datetime(df['Time'])
     for lynx_id, group in df.groupby('ID'):
-        # check that the hours are multiples of 4
+        # check hours are multiples of 4
         bad_hours = group[~group['Time'].dt.hour.isin([0, 4, 8, 12, 16, 20])]
         if not bad_hours.empty:
             print(f"ID {lynx_id} has bad hours:")
             print(bad_hours['Time'])
             return False
         
-        # check that minutes and seconds are zero
+        # check minutes and seconds are zero
         bad_time = group[(group['Time'].dt.minute != 0) | (group['Time'].dt.second != 0)]
         if not bad_time.empty:
             print(f"ID {lynx_id} has non-zero minutes/seconds:")
             print(bad_time['Time'])
             return False
-    
-    print("All timestamps are properly aligned to 4-hour intervals")
+   
+    print("All timestamps are properly aligned to 4-hour intervals!")
     return True
 
 if __name__ == "__main__":

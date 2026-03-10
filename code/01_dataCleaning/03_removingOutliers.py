@@ -23,7 +23,7 @@ def remove_high_speed_points(traj):
     Returns:
         traj: pd.DataFrame but where we've filtered out points with crazy speeds
     """
-    max_speed_kmph=20 # this is based on the distribution of instantaneous speeds. The cutoff is somewhat arbitrary, but research on lynx movement backs up that 20km/h is definitely incredibly rare
+    max_speed_kmph=10 
     traj = traj.sort_values("Time").reset_index(drop=True)
     keep_mask = np.ones(len(traj), dtype=bool)
 
@@ -61,8 +61,10 @@ if __name__ == "__main__":
     df['Sex'] = df['Sex'].astype(str).str.strip()  # remove leading/trailing spaces
     print("Unique sexes in data after stripping whitespace:", df['Sex'].unique())
 
-
     df.to_csv(output_path, index=False)
+
+
+
 
 
 
