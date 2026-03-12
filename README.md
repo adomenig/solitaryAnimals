@@ -15,24 +15,6 @@ Before running any of the scripts, we need to set up the environment first. To d
 3. Update the configuration file
    - Edit `config.py` to reflect the root directory of your project.
 
-**Required Packages**: You will need an environment with the following packages installed to run the scripts:
-
-- Python packages
-  - sys
-  - matplotlib
-  - numpy
-  - pandas
-  - pathlib
-  - concurrent.futures
-  - tqdm
-  - seaborn
-  - mpl_toolkits.basemap
-  - haversine
-
-- R packages
-  - tidyverse
-  - lubridate
-
 **References**  
 - Original data source: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165521)  
 - CTN_Refuge data: [USFWS database](https://iris.fws.gov/APPS/ServCat/Reference/Profile/165519)  
