@@ -83,13 +83,15 @@ This command runs the entire pipeline in one go. Each step can also be executed 
 
 2. **02(a + b)_stateClassification.py**  
    a) Assigns states based on the WMSD values calculated in the previous step.
+   
    b) Generates diagnostic plots for the assigned states. This includes:
       - Plots of the MSDs split by state
       - Plots of the velocity and turning angle distributions split by state
       - Example trajectories colored by assigned states
 
 4. **03(a + b)_splittingLoops.py**  
-   a) Identifies when state 2 causes a territory switch or when the lynx loops back to the same territory. If looping, assigns state 3 to the inbound/returning loop. 
+   a) Identifies when state 2 causes a territory switch or when the lynx loops back to the same territory. If looping, assigns state 3 to the inbound/returning loop.
+   
    b) Generates diagnostic plots for the assigned states. This includes:
       - Plots of the MSDs split by state
       - Plots of the velocity and turning angle distributions split by state
