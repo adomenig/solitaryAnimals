@@ -118,8 +118,8 @@ if __name__ == "__main__":
     # classify when a lynx actually comes back to the same territory vs when 
     # it's swithing to a new one after it goes on excursions
     state1_areas = compute_state1_convex_hulls(df)
-    state1_summary = pd.Series(state1_areas).describe()
-    p75 = state1_summary["75%"]
-    
-    df = identify_and_split_loops(df, p75)
+    p95 = np.percentile(state1_areas, 95)
+    radius = np.sqrt(p95 / np.pi)
+
+    df = identify_and_split_loops(df, radius)
     df.to_csv(out_path / "final_lynx_with_states.csv", index=False)

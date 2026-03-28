@@ -47,28 +47,9 @@ def extract_state_segments(states, coords):
 
     return segments
 
-
-def convert_to_xy_meters(coords):
-    """
-    Convert lat/long trajectory to relative xy meters
-    using haversine distances from first point.
-    """
-    base = coords[0]
-
-    xy = np.array([
-        [
-            haversine(base, (lat, base[1]), unit=Unit.METERS),
-            haversine(base, (base[0], lon), unit=Unit.METERS)
-        ]
-        for lat, lon in coords
-    ])
-
-    return xy
-
-
 def plot_statewise_msds(df, out_path):
 
-    state_info = [(1,'Stationary'), (2,'Exploratory'), (3,'Return Loop')]
+    state_info = [(1,'Stationary'), (2,'Exploratory'), (3, 'Return Loop')]
     fig, axs = plt.subplots(1,3, figsize=(18,5), sharey=True, sharex=True)
 
     for lynx_id, traj in df.groupby("ID"):
@@ -76,7 +57,7 @@ def plot_statewise_msds(df, out_path):
         coords = traj[['Lat','Long']].values
         states = traj['State_Loop_Split'].values
 
-        xy_meters = convert_to_xy_meters(coords)
+        xy_meters = helper_functions.project_to_alaska_albers(coords)
 
         segments = extract_state_segments(states, xy_meters)
 
@@ -89,8 +70,7 @@ def plot_statewise_msds(df, out_path):
 
                 max_lag = len(seg) // 2
                 msd = helper_functions.compute_msd(seg, max_lag)
-
-                msd = msd / 1_000_000  # convert m² → km²
+                msd = msd / 1e6  # convert m^2 to km^2
 
                 if len(msd) > 20:
                     msd = msd[:-20]
@@ -108,6 +88,7 @@ def plot_statewise_msds(df, out_path):
             ax.grid(True)
 
     axs[0].set_ylabel("MSD (km²)")
+
     plt.tight_layout()
     plt.savefig(out_path / "msd_by_state.png")
     print(f"Plotted statewise MSD.\n")
@@ -116,41 +97,35 @@ def plot_statewise_msds(df, out_path):
 
 
 ################ VELOCITY/TURNING ANGLE PLOT START #############################
-def bearing(lat1, lon1, lat2, lon2):
+def turning_angles_planar(coords):
     """
-    Compute initial bearing (radians) from point 1 to point 2 on a sphere.
+    Turning angles in projected Cartesian space.
     """
-    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    dlon = lon2 - lon1
-    x = np.sin(dlon) * np.cos(lat2)
-    y = np.cos(lat1)*np.sin(lat2) - np.sin(lat1)*np.cos(lat2)*np.cos(dlon)
-    return np.arctan2(x,y)
+    diffs = coords[1:] - coords[:-1]
 
-def turning_angles_spherical(coords):
-    """
-    Compute absolute turning angles (radians) between consecutive segments on a sphere.
-    """
-    bearings = np.array([bearing(coords[i,0], coords[i,1], coords[i+1,0], coords[i+1,1])
-                         for i in range(len(coords)-1)])
-    dtheta = bearings[1:] - bearings[:-1]
+    headings = np.arctan2(diffs[:, 1], diffs[:, 0])
+
+    dtheta = headings[1:] - headings[:-1]
     dtheta = (dtheta + np.pi) % (2*np.pi) - np.pi
+
     return np.abs(dtheta)
 
 def compute_velocity_and_turns(coords, times):
 
-    lat1, lon1 = coords[:-1, 0], coords[:-1, 1]
-    lat2, lon2 = coords[1:, 0], coords[1:, 1]
-
-    # call the vectorized haversine helper
-    distances = helper_functions.haversine_vectorized(lat1, lon1, lat2, lon2)  # km
-
-    # compute time differences in hours and then get km / h
     times = pd.to_datetime(times)
+
+    # project 
+    xy = helper_functions.project_to_alaska_albers(coords)
+
+    # velocity
+    dxy = xy[1:] - xy[:-1]
+    distances = np.linalg.norm(dxy, axis=1) / 1000  # km
+
     dt = np.array([(times[i+1] - times[i]).total_seconds() / 3600 for i in range(len(times)-1)])
     velocities = distances / dt  # km/h
 
-    # Compute turning angles
-    turning_angles = turning_angles_spherical(coords)
+    # turning angles 
+    turning_angles = turning_angles_planar(xy)
 
     return velocities, turning_angles
 
@@ -166,7 +141,6 @@ def extract_velocity_turn_by_state(df):
 
         velocities, turning_angles = compute_velocity_and_turns(coords, times)
         
-
         for state_val, key in [(1,'state1'),(2,'state2'), (3, 'state3')]:
             idx = np.where(states[1:-1] == state_val)[0] 
             out[key]['velocities'].extend(velocities[idx])  # velocity from i→i+1, assign it to point i
@@ -178,14 +152,14 @@ def extract_velocity_turn_by_state(df):
 
     return out
 
-def plot_velocity_turn_heatmaps(vel_turn_data, out_path, n_angle_bins=36, n_vel_bins=40, max_vel=800):
+def plot_velocity_turn_heatmaps(vel_turn_data, out_path, n_angle_bins=36, n_vel_bins=40, max_vel=8):
     state_info = [('state1','Stationary'), ('state2','Exploratory'), ('state3','Return Loop')]
     fig, axs = plt.subplots(1,3, figsize=(18,5), sharey=True)
 
     # create custom colormaps
     cmap_state1 = LinearSegmentedColormap.from_list("state1_cmap", ["white", colorscheme[2]])
     cmap_state2 = LinearSegmentedColormap.from_list("state2_cmap", ["white", colorscheme[4]])
-    cmap_state3 = LinearSegmentedColormap.from_list("state2_cmap", ["white", colorscheme[6]])
+    cmap_state3 = LinearSegmentedColormap.from_list("state3_cmap", ["white", colorscheme[6]])
 
     cmaps = [cmap_state1, cmap_state2, cmap_state3]
 
@@ -215,7 +189,7 @@ def plot_velocity_turn_heatmaps(vel_turn_data, out_path, n_angle_bins=36, n_vel_
         ax.grid(False)
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label("Density (log scale)")
-    axs[0].set_ylabel("Velocity (m/h)")
+    axs[0].set_ylabel("Velocity (km/h)")
     plt.tight_layout()
     plt.savefig(out_path / "velocity_turning_angle_dist.png", dpi=300)
     print(f"Plotted velocity and turning angle heatmaps for each state.\n")
