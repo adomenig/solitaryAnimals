@@ -24,9 +24,13 @@ out_path.mkdir(parents=True, exist_ok=True)
 colorscheme = ["#8fd7d7", "#00b0be", "#ff8ca1", "#f45f74", "#bdd373", "#98c127", "#ffcd8e", "#ffb255", "#c084d4"]
 
 ########## MEAN SQUARED DISPLACEMENT PLOT START #############################
-def extract_state_segments(states, coords):
+def extract_state_segments(states, coords, times):
     """
-    Extract continuous coordinate segments for each state.
+    Extract continuous segments for each state, but we need to preserve coordinates and timestamps.
+    Returns:
+        segments[state] = list of dicts with keys:
+            - xy
+            - time
     """
     segments = {1: [], 2: []}
 
@@ -34,50 +38,80 @@ def extract_state_segments(states, coords):
     start = None
 
     for i in range(len(states)):
+
         if states[i] != in_state:
+
+            # close previous segment
             if in_state is not None:
-                segments[in_state].append(coords[start:i])
+                segments[in_state].append({
+                    "xy": coords[start:i],
+                    "time": times[start:i]
+                })
+
             in_state = states[i]
             start = i
 
+    # close final segment
     if in_state is not None:
-        segments[in_state].append(coords[start:])
+        segments[in_state].append({
+            "xy": coords[start:],
+            "time": times[start:]
+        })
 
     return segments
 
-
 def plot_statewise_msds(df, out_path):
+    """
+    Plot the MSDs for each state. We project to cartesian space first before calculating
+    distances. Also, we account for time differences in time steps. 
+    """
+    state_info = [(1, 'Stationary'), (2, 'Exploratory')]
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True, sharex=True)
 
-    state_info = [(1,'Stationary'), (2,'Exploratory')]
-    fig, axs = plt.subplots(1,2, figsize=(12,5), sharey=True, sharex=True)
+    df = df.copy()
+    df["Time"] = pd.to_datetime(df["Time"])
 
     for lynx_id, traj in df.groupby("ID"):
 
-        coords = traj[['Lat','Long']].values
-        states = traj['State'].values
+        traj = traj.sort_values("Time")
 
+        coords = traj[['Lat', 'Long']].values
+        states = traj['State'].values
+        times = traj['Time'].values
+
+        # project to meters
         xy_meters = helper_functions.project_to_alaska_albers(coords)
 
-        segments = extract_state_segments(states, xy_meters)
+        # split into state segments including timestamps
+        segments = extract_state_segments(states, xy_meters, times)
 
         for ax, (state_val, title) in zip(axs, state_info):
 
             for seg in segments[state_val]:
 
-                if len(seg) < 24:
+                if len(seg["xy"]) < 24:
                     continue
 
-                max_lag = len(seg) // 2
-                msd = helper_functions.compute_msd(seg, max_lag)
-                msd = msd / 1e6  # convert m^2 to km^2
+                xy = seg["xy"]
+                t = seg["time"]
+
+                max_lag = len(xy) // 2
+                msd = helper_functions.compute_msd(xy, max_lag)
+                msd = msd / 1e6  # m² → km²
+
+                # compute REAL time lags
+                t0 = t[0]
+                lag_hours = np.array([
+                    (t[i] - t0) / np.timedelta64(1, 'h')
+                    for i in range(1, len(msd) + 1)
+                ])
 
                 if len(msd) > 20:
                     msd = msd[:-20]
+                    lag_hours = lag_hours[:-20]
 
-                lags = np.arange(1, len(msd)+1) * 4  # 4-hour sampling
-
-                ax.plot(lags, msd,
-                        color=colorscheme[state_val*2],
+                ax.plot(lag_hours, msd,
+                        color=colorscheme[state_val * 2],
                         alpha=0.3)
 
             ax.set_title(title)
@@ -90,7 +124,7 @@ def plot_statewise_msds(df, out_path):
 
     plt.tight_layout()
     plt.savefig(out_path / "msd_by_state.png")
-    print(f"Plotted statewise MSD.\n")
+    print("Plotted statewise MSD.\n")
 ########## MEAN SQUARED DISPLACEMENT PLOT END #############################
 
 
@@ -109,10 +143,10 @@ def turning_angles_planar(coords):
     return np.abs(dtheta)
 
 def compute_velocity_and_turns(coords, times):
-
+    # get the times
     times = pd.to_datetime(times)
 
-    # project 
+    # project to cartesian space
     xy = helper_functions.project_to_alaska_albers(coords)
 
     # velocity
@@ -140,7 +174,7 @@ def extract_velocity_turn_by_state(df):
 
         for state_val, key in [(1,'state1'),(2,'state2')]:
             idx = np.where(states[1:-1] == state_val)[0] 
-            out[key]['velocities'].extend(velocities[idx])  # velocity from i→i+1, assign it to point i
+            out[key]['velocities'].extend(velocities[idx]) 
             out[key]['turning_angles'].extend(turning_angles[idx])
 
     for key in out:
