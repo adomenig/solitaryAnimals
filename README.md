@@ -53,15 +53,17 @@ This command runs the entire pipeline in one go. Each step can also be executed 
 ## State Classification
 The state classification pipeline is located in `/code/02_stateClassification/`. The outputs for this pipeline will appear in:
 
-- `/data/processed/stateClassification/` — cleaned CSV files  
+- `/data/processed/stateClassification/` — cleaned CSV files, WMSD files
 - `/outputs/classification_diagnostics/` — plots and diagnostic figures
+
+**Note:** Step 1 takes a while to run, so I provide the windowed median squared displacement (WMSD) files in `/data/processed/stateClassification/`. By downloading them and putting them in the same location, the pipeline will automatically skip step 1. Otherwise, step 1 will proceed normally and calculate the WMSD values and cache them in the same location. 
 
 To run the pipeline, use the `stateClassification.sh` script. Navigate to `/code/02_stateClassification/` and run the following command: `./stateClassification.sh --config /path/to/config.py`
 
 This command runs the entire pipeline in one go. Each step can also be executed individually if needed. The state classification pipeline consists of three main steps:
 
 1. **01_wmsdCalculation.py**  
-   Calculates windowed median squared displacement (WMSD). This script takes long to run, so I provided the pre-calculated cached files which are in       `/data/processed/stateClassification/`. By downloading these files and keeping them in the same relative location, the script will skip this step.
+   Calculates windowed median squared displacement (WMSD). This script takes long to run, so I provided the pre-calculated cached files which are in       `/data/processed/stateClassification/`. By downloading these files and placing them in the same relative location, the script will skip this step.
 
 2. **02(a + b)_stateClassification.py**  
    a) Assigns states based on the WMSD values calculated in the previous step.
@@ -81,4 +83,25 @@ This command runs the entire pipeline in one go. Each step can also be executed 
    
 
   
+## Movement Model
+The state classification pipeline is located in `/code/03_movementModel/`. The outputs for this pipeline will appear in:
+
+- `/data/processed/movementModel/` — fit parameters for the movement model
+- `/outputs/movement_diagnostics/` — plots and diagnostic figures
+
+To run the pipeline, use the `movementModel.sh` script. Navigate to `/code/03_movementModel/` and run the following command: `./movementModel.sh --config /path/to/config.py`
+
+This command runs the entire pipeline in one go. Each step can also be executed individually if needed. The state classification pipeline consists of three main steps:
+
+1. **01_fittingParameters.py**  
+   Saves fitted parameters to a CSV file. Parameters are selected using both quantitative and qualitative criteria. Also includes the fitting workflow (parameter sweeps and comparisons of state-specific MSD means and distributions), computes convex hull area distributions for the stationary state, and calculates the probability of home switching after exploratory movement as a function of distance from home. Plots are saved in `/outputs/movement_diagnostics/01_distributions`.
+
+2. **02_simulationDiagnostics.py**  
+   Runs movement simulations and generates diagnostic plots saved in `/outputs/movement_diagnostics/02_diagnostics`. Outputs include:
+   - State-specific MSD plots from simulations  
+   - Velocity and turning angle distributions by state  
+   - Example simulated trajectories
+  
+## Population Model
+
 
